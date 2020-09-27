@@ -10,7 +10,10 @@
 #include <stack>
 #include <set>
 #include <queue>
+#include <time.h>
 #include <cstring>
+#include <random>
+#include <map>
 #include "container/emplace_back_check.h"
 #include "container/rvalue_check.h"
 
@@ -26,13 +29,30 @@ struct TreeNode {
   TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
 };
 
+//class Node {
+//  int row;
+//  int col;
+//  Node(int row, int col) {
+//    this->row = row;
+//    this->col = col;
+//  }
+//};
+
 class Node {
-  int row;
-  int col;
-  Node(int row, int col) {
-    this->row = row;
-    this->col = col;
-  }
+public:
+    int val;
+    vector<Node*> children;
+
+    Node() {}
+
+    Node(int _val) {
+        val = _val;
+    }
+
+    Node(int _val, vector<Node*> _children) {
+        val = _val;
+        children = _children;
+    }
 };
 
 
@@ -144,6 +164,33 @@ public:
 
 private:
   std::stack<TreeNode*> st{};
+};
+
+//https://leetcode.com/problems/kth-largest-element-in-a-stream/
+class KthLargest {
+public:
+    KthLargest(int k, vector<int>& nums) {
+      priority = k;
+      for (auto& num : nums) {
+        add(num);
+      }
+    }
+
+    int add(int val) {
+      if (_pq.size() == priority && _pq.top() >= val) {
+        return _pq.top();
+      } else if (_pq.size() < priority) {
+        _pq.emplace(val);
+      } else {
+        _pq.pop();
+        _pq.emplace(val);
+      }
+      return _pq.top();
+    }
+
+private:
+  int priority;
+  priority_queue<int, vector<int>, greater<int>> _pq;
 };
 
 class Solution {
@@ -418,38 +465,7 @@ public:
 //    return count;
 //  }
 
-  void heapBuild(vector<int>& data, int root, int len) {
-    int left = root * 2 + 1;
-    if (left < len) {
-      if ((left + 1) < len && data[left] < data[left + 1]) {
-        left++;
-      }
-      if (data[left] > data[root]) {
-        int tmp = data[left];
-        data[left] = data[root];
-        data[root] = tmp;
-        heapBuild(data, left, len);
-      }
-    }
-  }
-
-  int kthSmallest(vector<vector<int>>& matrix, int k) {
-    vector<int> maxHeap(k, INT_MAX);
-    int len = matrix.size();
-    for (int i = 0; i < len; i++) {
-      if (matrix[i][0] > maxHeap[0]) break;
-      for (int j = 0; j < len; j++) {
-        if (matrix[i][j] > maxHeap[0]) {
-          break;
-        } else {
-          maxHeap[0] = matrix[i][j];
-          heapBuild(maxHeap, 0, k);
-        }
-      }
-    }
-    return maxHeap[0];
-  }
-
+  //https://leetcode.com/problems/3sum/
   vector<vector<int>> threeSum(vector<int>& nums) {
     std::sort(nums.begin(), nums.end());
     int len = nums.size();
@@ -474,6 +490,28 @@ public:
     return res;
   }
 
+  //O(n^3), TimeLimit
+  void threeSumHelper(vector<int>& nums, vector<vector<int>>& res, vector<int>& tmp_list, int begin) {
+    if (tmp_list.size() == 3) {
+      if ((tmp_list[0] + tmp_list[1] + tmp_list[2]) == 0) res.emplace_back(tmp_list);
+    } else {
+      for (int i = begin; i < nums.size(); i++) {
+        if (i > begin && nums[i] == nums[i-1]) continue;
+        tmp_list.emplace_back(nums[i]);
+        threeSumHelper(nums, res, tmp_list, i+1);
+        tmp_list.pop_back();
+      }
+    }
+  }
+  vector<vector<int>> threeSum2(vector<int>& nums) {
+    std::sort(nums.begin(), nums.end());
+    vector<vector<int>> res{};
+    vector<int> tmp_list{};
+    threeSumHelper(nums, res, tmp_list, 0);
+    return res;
+  }
+
+  //https://leetcode.com/problems/3sum-closest/
   int threeSumClosest(vector<int>& nums, int target) {
     std::sort(nums.begin(), nums.end());
     int len = nums.size(), gap = std::numeric_limits<int>::max(), res = 0;
@@ -493,6 +531,72 @@ public:
         } else {
           return target;
         }
+      }
+    }
+    return res;
+  }
+
+  //https://leetcode.com/problems/3sum-smaller/
+  int threeSumSmaller(vector<int> &nums, int target) {
+    std::sort(nums.begin(), nums.end());
+    int res = 0, n = nums.size();
+    for (int i = 0; i < n - 2; ++i) {
+      int left = i + 1, right = n - 1;
+      while (left < right) {
+        if (nums[i] + nums[left] + nums[right] < target) {
+          res += right - left;
+          ++left;
+        } else {
+          --right;
+        }
+      }
+    }
+    return res;
+  }
+
+  //https://leetcode.com/problems/4sum/
+  vector<vector<int>> fourSum(vector<int>& nums, int target) {
+    std::sort(nums.begin(), nums.end());
+    vector<vector<int>> res{};
+    int left, right, sum, n = nums.size();
+    for (int i = 0; i < n - 3; i++) {
+      if (i > 0 && nums[i] == nums[i-1]) continue;
+
+      for (int j = i + 1; j < n - 2; j++) {
+        if (j > i+1 && nums[j] == nums[j-1]) continue;
+
+        left = j + 1, right = n - 1;
+        while (left < right) {
+          sum = nums[i] + nums[j] + nums[left] + nums[right];
+          if (sum > target) {
+            right--;
+          } else if (sum < target) {
+            left++;
+          } else {
+            res.emplace_back(std::move(vector<int>{nums[i], nums[j], nums[left], nums[right]}));
+            left++, right--;
+            while (left < right && nums[left] == nums[left-1]) left++;
+            while (left < right && nums[right] == nums[right+1]) right--;
+          }
+        }
+      }
+    }
+    return res;
+  }
+
+  //https://leetcode.com/problems/4sum-ii/
+  int fourSumCount(vector<int> &A, vector<int> &B, vector<int> &C, vector<int> &D) {
+    std::unordered_map<int, int> m{};
+    for (int i = 0; i < A.size(); i++) {
+      for (int j = 0; j < B.size(); j++) {
+        m[A[i] + B[j]] += 1;
+      }
+    }
+
+    int res = 0;
+    for (int i = 0; i < C.size(); i++) {
+      for (int j = 0; j < D.size(); j++) {
+        res += m[0 - C[i] - D[j]];
       }
     }
     return res;
@@ -1498,6 +1602,21 @@ public:
     }
     return res;
   }
+  vector<int> preorderTraversal3(TreeNode* root) {
+    vector<int> res{};
+    if (!root) return res;
+
+    stack<TreeNode*> st{};
+    st.emplace(root);
+    while (!st.empty()) {
+      TreeNode* cur = st.top();
+      st.pop();
+      res.emplace_back(cur->val);
+      if (cur->right) st.emplace(cur->right);
+      if (cur->left) st.emplace(cur->left);
+    }
+    return res;
+  }
 
   //https://leetcode.com/problems/binary-tree-inorder-traversal/
   void inorder_helper(TreeNode* root, vector<int>& res) {
@@ -1553,6 +1672,21 @@ public:
       }
       cur = st.top(), st.pop();
       cur = cur->left;
+    }
+    return res;
+  }
+  vector<int> postorderTraversal2(TreeNode* root) {
+    vector<int> res{};
+    if (!root) return res;
+
+    stack<TreeNode*> st{};
+    st.emplace(root);
+    while (!st.empty()) {
+      TreeNode* cur = st.top();
+      st.pop();
+      res.insert(res.begin(), cur->val);
+      if (cur->left) st.emplace(cur->left);
+      if (cur->right) st.emplace(cur->right);
     }
     return res;
   }
@@ -2107,32 +2241,20 @@ public:
 
   //https://leetcode.com/problems/first-missing-positive/
   int firstMissingPositive(vector<int>& nums) {
-    if (nums.empty()) return -1;
-    std::sort(nums.begin(), nums.end());
-    vector<int> vec{};
-    int res = INT_MAX, last = nums[0], flag = 1;
-    for (int i = 1; i < nums.size(); i++) {
-      if ((nums[i] - last == 2) && ((i+1 < nums.size() && nums[i+1] - nums[i] == 1) || i+1 >= nums.size())) {
-        vec.push_back(nums[i]-1);
-        flag = 0;
+    //put num on it's right location
+    int n = nums.size();
+    for (int i = 0; i < n; i++) {
+      while (nums[i] > 0 && nums[i] <= n && nums[i] != nums[nums[i] - 1]) {
+        std::swap(nums[i], nums[nums[i] - 1]);
       }
-      last = nums[i];
     }
 
-    if (flag) {
-      if (nums[0] - 1 > 0) {
-        res = nums[0] - 1;
-      } else if (nums[nums.size()-1] + 1 > 0) {
-        res = nums[nums.size()-1] + 1;
-      }
-    } else {
-      for (auto& num : vec) {
-        if (num > 0 && num < res) {
-          res = num;
-        }
+    for (int i = 0; i < n; i++) {
+      if (nums[i] != i + 1) {
+        return i + 1;
       }
     }
-    return res;
+    return n + 1;
   }
 
   //https://leetcode.com/problems/kth-largest-element-in-an-array/
@@ -2174,9 +2296,13 @@ public:
     return pq.top();
   }
 
-  //
-  void wiggleSort(vector<int>& nums) {
-  }
+  //https://leetcode.com/problems/wiggle-sort-ii/
+//  void wiggleSort(vector<int>& nums) {
+//    std::sort(nums.begin(), nums.end());
+//    vector<bool> is_used(nums.size(), false);
+//    int begin = 0, end = nums.size()-1;
+//    for ()
+//  }
 
 
   //https://leetcode.com/problems/third-maximum-number/
@@ -2195,6 +2321,7 @@ public:
     return num_set.size() >= 3 ? pq.top() : max_v;
   }
 
+  // can't ac, just an idea
   int thirdMax(vector<int>& nums) {
     int max1, max2, max3;
     max1 = max2 = max3 = INT_MIN;
@@ -2214,6 +2341,484 @@ public:
     return max3 > INT_MIN ? max3 : max1;
   }
 
+  //https://leetcode.com/problems/container-with-most-water/
+  int maxArea(vector<int>& nums) {
+    int res = 0, len = nums.size() - 1;
+    for (int i = 0; i < len; i++) {
+      for (int j = len; j > i; j--) {
+        res = std::max(res, (j - i) * std::min(nums[i], nums[j]));
+      }
+    }
+    return res;
+  }
+
+  int maxArea1(vector<int>& nums) {
+    int res = 0, len = nums.size() - 1;
+    for (int i = 0; i < len; i++) {
+      if (i > 0 && nums[i] <= nums[i-1]) continue;
+      for (int j = len; j > i; j--) {
+        if (nums[j] >= nums[i]) {
+          res = std::max(res, (j - i) * nums[i]);
+          break;
+        }
+        if (j < len && nums[j] <= nums[j+1]) continue;
+        res = std::max(res, (j - i) * std::min(nums[i], nums[j]));
+      }
+    }
+    return res;
+  }
+
+  int maxArea2(vector<int>& nums) {
+    int res = 0, max_l = 0, max_r = 0, end = nums.size() - 1;
+    for (int i = 0; i < end; i++) {
+      if (nums[i] <= max_l) continue; //obsolete right
+      max_l = nums[i];
+      max_r = 0;
+
+      for (int j = end; j > i; j--) {
+        if (nums[j] >= nums[i]) {
+          res = std::max(res, (j - i) * nums[i]);
+          break;
+        }
+
+        end = j - 1; //obsolete left
+
+        if (nums[j] <= max_r) continue;
+        max_r = nums[j];
+        res = std::max(res, (j - i) * std::min(nums[i], nums[j]));
+      }
+    }
+    return res;
+  }
+
+  //https://leetcode.com/problems/k-closest-points-to-origin/
+  vector<vector<int>> kClosest1(vector<vector<int>>& points, int K) {
+    priority_queue<pair<int, vector<int>>> pq{};
+    for (auto& p : points) {
+      pq.emplace(make_pair(p[0]*p[0] + p[1]*p[1], p));
+      if (pq.size() > K) pq.pop();
+    }
+
+    vector<vector<int>> res{};
+    while (!pq.empty()) {
+      res.emplace_back(pq.top().second);
+      pq.pop();
+    }
+    return res;
+  }
+
+  vector<vector<int>> kClosest(vector<vector<int>>& points, int K) {
+    priority_queue<pair<int, vector<int>>, vector<pair<int, vector<int>>>, greater<pair<int, vector<int>>>> pq{};
+    int prio = points.size() - K;
+    vector<vector<int>> res{};
+    for (auto& p : points) {
+      pq.emplace(make_pair(p[0]*p[0] + p[1]*p[1], std::move(p)));
+      if (pq.size() > prio) {
+        res.emplace_back(pq.top().second);
+        pq.pop();
+      }
+    }
+    return res;
+  }
+
+  //quick sort
+  int position(vector<int>& nums, int begin, int end) {
+    int key = nums[begin];
+    while (begin < end) {
+      while (begin < end && nums[end] >= key) end--;
+      nums[begin] = nums[end];
+      while (begin < end && nums[begin] < key) begin++;
+      nums[end] = nums[begin];
+    }
+    nums[begin] = key;
+    return begin;
+  }
+
+  void quick_sort(vector<int>& nums, int begin, int end) {
+    if (begin < end) {
+      int mid = position(nums, begin, end);
+      quick_sort(nums, begin, mid - 1);
+      quick_sort(nums, mid + 1, end);
+    }
+  }
+  //heap sort, big heap
+  void adjust(vector<int>& nums, int root, int len) {
+    int child = root * 2 + 1;
+    if (child < len && (child + 1) < len && nums[child] < nums[child+1]) {
+      child++;
+    }
+
+    if (child < len && nums[root] < nums[child]) {
+      std::swap(nums[root], nums[child]);
+      adjust(nums, child, len);
+    }
+  }
+
+  void heap_sort(vector<int>& nums) {
+    int len = nums.size();
+    //build heap
+    for (int i = (len / 2 - 1); i >= 0; i--) {
+      adjust(nums, i, len);
+    }
+    //adjust
+    for (int i = len - 1; i > 0; i--) {
+      std::swap(nums[0], nums[i]);
+      adjust(nums, 0, i);
+    }
+  }
+
+  //kth large num
+  int kth_large(vector<int>& nums, int k) {
+    int begin = 0, end = nums.size() - 1;
+    k--;
+    while (begin <= end) {
+      int mid = position(nums, begin, end);
+      if (mid == k) {
+        return nums[mid];
+      } else if (mid > k) {
+        end = mid - 1;
+      } else {
+        begin = mid + 1;
+      }
+    }
+    return -1;
+  }
+  //bucket sort
+
+  //https://leetcode.com/problems/game-of-life/
+  void gameOfLife(vector<vector<int>>& board) {
+    int row = board.size(), col = board[0].size();
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < col; j++) {
+        int lives = 0;
+        for (int m = i - 1; m <= i + 1; m++) {
+          for (int n = j - 1; n <= j + 1; n++) {
+            if ((m >= 0 && m < row) && (n >= 0 && n < col) && (board[m][n] == 1 || board[m][n] == 2)) {
+              lives++;
+            }
+          }
+        }
+
+        if (board[i][j] == 1 && (lives < 3 || lives > 4)) { //add board[i][j]=1 more
+          board[i][j] = 2;
+        } else if (board[i][j] == 0 && lives == 3) {
+          board[i][j] = 3;
+        }
+      }
+    }
+
+    for (auto& vec : board) {
+      for (auto& num : vec) {
+        num %= 2;
+      }
+    }
+  }
+
+  //https://leetcode.com/problems/spiral-matrix/
+  vector<int> spiralOrder(vector<vector<int>>& mat) {
+    vector<int> res{};
+    if (mat.empty()) return res;
+
+    int r1 = 0, r2 = mat.size()-1, c1 = 0, c2 = mat[0].size()-1;
+    int i = r1, j = c1;
+    while (r1 <= r2 && c1 <= c2) {
+      if (i == r1 && j == c1) {
+        while (j <= c2) res.emplace_back(mat[i][j++]);
+        j = c2;
+        r1++;
+        i++;
+      } else if (i == r1 && j == c2) {
+        while (i <= r2) res.emplace_back(mat[i++][j]);
+        i = r2;
+        c2--;
+        j--;
+      } else if (i == r2 && j == c2) {
+        while (j >= c1) res.emplace_back(mat[i][j--]);
+        j = c1;
+        r2--;
+        i--;
+      } else {
+        while (i >= r1) res.emplace_back(mat[i--][j]);
+        i = r1;
+        c1++;
+        j++;
+      }
+    }
+    return res;
+  }
+
+  //https://leetcode.com/problems/binary-tree-level-order-traversal/
+  vector<vector<int>> levelOrder1(TreeNode* root) {
+    vector<vector<int>> res{};
+    if (root == nullptr) return res;
+
+    std::queue<TreeNode*> q{};
+    q.emplace(root);
+    while (!q.empty()) {
+      int level_size = q.size();
+      vector<int> level_res(level_size);
+      for (int i = 0; i < level_size; i++) {
+        root = q.front();
+        level_res[i] = root->val;
+        if (root->left != nullptr) q.emplace(root->left);
+        if (root->right != nullptr) q.emplace(root->right);
+        q.pop();
+      }
+      res.emplace_back(level_res);
+    }
+    return res;
+  }
+
+  void levelOrderHelper(TreeNode *root, int deep, vector<vector<int>>& res) {
+    if (root != nullptr) {
+      if (res.size() > deep) {
+        res[deep].emplace_back(root->val);
+      } else {
+        res.emplace_back(vector<int>{root->val});
+      }
+      levelOrderHelper(root->left, deep+1, res);
+      levelOrderHelper(root->right, deep+1, res);
+    }
+  }
+  vector<vector<int>> levelOrder(TreeNode* root) {
+    vector<vector<int>> res{};
+    levelOrderHelper(root, 0, res);
+    return res;
+  }
+
+  //https://leetcode.com/problems/binary-tree-level-order-traversal-ii/
+  vector<vector<int>> levelOrderBottom(TreeNode* root) {
+    vector<vector<int>> res{};
+    levelOrderHelper(root, 0, res);
+
+    int left = 0, right = res.size() - 1;
+    while (left < right) {
+      std::swap(res[left], res[right]);
+      left++;
+      right--;
+    }
+    return res;
+  }
+
+  //https://leetcode.com/problems/minimum-depth-of-binary-tree/
+  int minDepth(TreeNode* root) {
+    if (root == nullptr) {
+      return 0;
+    }
+    if (root->left == nullptr || root->right == nullptr) {
+      return 1 + minDepth(root->right) + minDepth(root->left);
+    }
+    return 1 + std::min(minDepth(root->left), minDepth(root->right));
+  }
+
+  //https://leetcode.com/problems/average-of-levels-in-binary-tree/
+  void avgLevelsHelper(TreeNode* root, vector<pair<int, long>>& res, int deep) {
+    if (root != nullptr) {
+      if (res.size() > deep) {
+        auto& item = res[deep];
+        item.first += 1;
+        item.second += root->val;
+      } else {
+        res.emplace_back(1, root->val);
+      }
+
+      avgLevelsHelper(root->left, res, deep + 1);
+      avgLevelsHelper(root->right, res, deep + 1);
+    }
+  }
+
+  //use int can't ac, value too large to sum
+  vector<double> averageOfLevels(TreeNode* root) {
+    vector<pair<int, long>> sum{};
+    avgLevelsHelper(root, sum, 0);
+    vector<double> res{};
+    for (auto& item : sum) {
+      res.emplace_back(item.second * 1.0 / item.first);
+    }
+    return res;
+  }
+
+  //https://leetcode.com/problems/cousins-in-binary-tree/
+  bool isCousins(TreeNode* root, int x, int y) {
+    if (root == nullptr) return false;
+    std::queue<TreeNode*> que{};
+    que.emplace(root);
+    while (!que.empty()) {
+      int l_size = que.size(), flag = 0;
+      for (int i = 0; i < l_size; i++) {
+        root = que.front();
+        que.pop();
+        if (root->val == x) flag |= 1;
+        if (root->val == y) flag |= 2;
+
+        if (root->left != nullptr && root->right != nullptr) {//not sister
+          if ((root->left->val + root->right->val) == (x + y) && (root->left->val * root->right->val == x * y)) {
+            return false;
+          }
+        }
+
+        if (root->left != nullptr) que.emplace(root->left);
+        if (root->right != nullptr) que.emplace(root->right);
+      }
+
+      if (flag == 3) return true;
+      if (flag > 0) return false;
+    }
+    return false;
+  }
+
+  //https://leetcode.com/problems/binary-tree-zigzag-level-order-traversal/
+  void zigzagLevelOrderHelper(TreeNode* root, vector<vector<int>>& res, int deep) {
+    if (root != nullptr) {
+      if (res.size() > deep) {
+        if (!(deep & 1)) {
+          res[deep].emplace_back(root->val);
+        } else {
+          res[deep].insert(res[deep].begin(), root->val);
+        }
+      } else {
+        res.emplace_back(vector<int>{root->val});
+      }
+
+      zigzagLevelOrderHelper(root->left, res, deep + 1);
+      zigzagLevelOrderHelper(root->right, res, deep + 1);
+    }
+  }
+
+  vector<vector<int>> zigzagLevelOrder(TreeNode* root) {
+    vector<vector<int>> res{};
+    zigzagLevelOrderHelper(root, res, 0);
+    return res;
+  }
+
+  //https://leetcode.com/problems/binary-tree-vertical-order-traversal/
+  vector<vector<int>> verticalOrder(TreeNode* root) {
+    vector<vector<int>> res{};
+    if (!root) return res;
+
+    std::map<int, vector<int>> m{};
+    std::queue<pair<int, TreeNode*>> que;
+    que.emplace(0, root);
+    while (!que.empty()) {
+      auto& node = que.front();
+      que.pop();
+      m[node.first].emplace_back(node.second->val);
+
+      if (node.second->left) que.emplace(node.first - 1, node.second->left);
+      if (node.second->right) que.emplace(node.first + 1, node.second->right);
+    }
+
+    for (auto& item : m) {
+      res.emplace_back(item.second);
+    }
+    return res;
+  }
+
+  //https://leetcode.com/problems/n-ary-tree-level-order-traversal/
+  void levelOrderHelper(Node* root, vector<vector<int>>& res, int deep) {
+    if (root != nullptr) {
+      if (res.size() > deep) {
+        res[deep].emplace_back(root->val);
+      } else {
+        res.emplace_back(vector<int>{root->val});
+      }
+
+      for (auto& child : root->children) {
+        levelOrderHelper(child, res, deep + 1);
+      }
+    }
+  }
+
+  vector<vector<int>> levelOrder(Node* root) {
+    vector<vector<int>> res{};
+    levelOrderHelper(root, res, 0);
+    return res;
+  }
+
+  //https://leetcode.com/problems/n-ary-tree-preorder-traversal/
+  void preOrderHelper(Node* root, vector<int>& res) {
+    if (!root) return;
+    res.emplace_back(root->val);
+    for (auto& child : root->children) {
+      preOrderHelper(child, res);
+    }
+  }
+  vector<int> preorder1(Node* root) {
+    vector<int> res{};
+    preOrderHelper(root, res);
+    return res;
+  }
+
+  vector<int> preorder(Node* root) {
+    vector<int> res{};
+    if (!root) return res;
+
+    stack<Node*> sta{};
+    sta.emplace(root);
+    while (!sta.empty()) {
+      Node* cur = sta.top();
+      sta.pop();
+      res.emplace_back(cur->val);
+      for (int i = cur->children.size() - 1; i >= 0; i--) {
+        sta.emplace(cur->children[i]);
+      }
+    }
+    return res;
+  }
+
+  //https://leetcode.com/problems/n-ary-tree-postorder-traversal/
+  vector<int> postorder(Node* root) {
+    vector<int> res{};
+    if (!root) return res;
+
+    stack<Node*> st{};
+    st.emplace(root);
+    while (!st.empty()) {
+      Node* cur = st.top();
+      st.pop();
+      res.insert(res.begin(), cur->val);
+      for (int i = 0; i < cur->children.size(); i++) {
+        st.emplace(cur->children[i]);
+      }
+    }
+    return res;
+  }
+
+  //https://leetcode.com/problems/kth-smallest-element-in-a-sorted-matrix/
+  void heapBuild(vector<int>& data, int root, int len) {
+    int left = root * 2 + 1;
+    if (left < len) {
+      if ((left + 1) < len && data[left] < data[left + 1]) {
+        left++;
+      }
+      if (data[left] > data[root]) {
+        int tmp = data[left];
+        data[left] = data[root];
+        data[root] = tmp;
+        heapBuild(data, left, len);
+      }
+    }
+  }
+
+  int kthSmallest(vector<vector<int>>& matrix, int k) {
+    vector<int> maxHeap(k, INT_MAX);
+    int len = matrix.size();
+    for (int i = 0; i < len; i++) {
+      if (matrix[i][0] > maxHeap[0]) break;
+      for (int j = 0; j < len; j++) {
+        if (matrix[i][j] > maxHeap[0]) {
+          break;
+        } else {
+          maxHeap[0] = matrix[i][j];
+          heapBuild(maxHeap, 0, k);
+        }
+      }
+    }
+    return maxHeap[0];
+  }
+
+  int kthSmallest1(vector<vector<int>>& matrix, int k) {
+  }
 
 
   void test(vector<int>& vec) {
@@ -2233,7 +2838,20 @@ public:
 //  std::numeric_limits<int>::max();
 int main() {
   auto s = new Solution();
-  vector<int> nums{1,1,2};
-  cout << s->thirdMax(nums) << endl;
-
+  TreeNode root(0);
+  TreeNode l1(1);
+  TreeNode r1(2);
+  TreeNode l2(3);
+  TreeNode r2(4);
+  root.left = &l1;
+  root.right = &r1;
+  l1.left = &l2;
+  l1.right = &r2;
+  vector<vector<int>> res = s->verticalOrder(&root);
+  for (auto& vec : res) {
+    for (auto& num : vec) {
+      cout << num << ",";
+    }
+    cout << endl;
+  }
 }
