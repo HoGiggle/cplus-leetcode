@@ -193,6 +193,70 @@ private:
   priority_queue<int, vector<int>, greater<int>> _pq;
 };
 
+class TicTacToe {
+public:
+    /** Initialize your data structure here. */
+    TicTacToe(int n): rows(n), cols(n), N(n), diag(0), rev_diag(0) {}
+
+    int move(int row, int col, int player) {
+        int add = player == 1 ? 1 : -1;
+        rows[row] += add;
+        cols[col] += add;
+        diag += (row == col ? add : 0);
+        rev_diag += (row == N - col - 1 ? add : 0);
+        return (abs(rows[row]) == N || abs(cols[col]) == N || abs(diag) == N || abs(rev_diag) == N) ? player : 0;
+    }
+
+private:
+    vector<int> rows, cols;
+    int diag, rev_diag, N;
+};
+
+class NestedInteger {
+public:
+  // Return true if this NestedInteger holds a single integer, rather than a nested list.
+  bool isInteger() const;
+
+  // Return the single integer that this NestedInteger holds, if it holds a single integer
+  // The result is undefined if this NestedInteger holds a nested list
+  int getInteger() const;
+
+  // Return the nested list that this NestedInteger holds, if it holds a nested list
+  // The result is undefined if this NestedInteger holds a single integer
+  const vector<NestedInteger> &getList() const;
+};
+
+class NestedIterator {
+public:
+  NestedIterator(const vector<NestedInteger> &nestedList) {
+    flatten(nestedList);
+  }
+
+  int next() {
+    int n = st.top().getInteger();
+    st.pop();
+    return n;
+  }
+
+  bool hasNext() {
+    while (!st.empty() && !st.top().isInteger()) {
+      auto list = st.top().getList();
+      st.pop();
+      flatten(list);
+    }
+    return !st.empty();
+  }
+
+private:
+  void flatten(vector<NestedInteger> list) {
+    for (int i = list.size() - 1; i >= 0; i--) {
+      st.emplace(list[i]);
+    }
+  }
+
+  stack<NestedInteger> st;
+};
+
 class Solution {
 public:
   TreeNode* sortedArrayToBST(vector<int>& nums) {
@@ -2547,6 +2611,37 @@ public:
     return res;
   }
 
+  //https://leetcode.com/problems/spiral-matrix-ii/
+  vector<vector<int>> generateMatrix(int n) {
+    vector<vector<int>> res(n, vector<int>(n, 0));
+    int r1 = 0, r2 = n - 1, c1 = 0, c2 = n - 1;
+    int i = r1, j = c1, num = 1;
+    while (r1 <= r2 && c1 <= c2) {
+      if (i == r1 && j == c1) {
+        while (j <= c2) res[i][j++] = num++;
+        j = c2;
+        r1++;
+        i++;
+      } else if (i == r1 && j == c2) {
+        while (i <= r2) res[i++][j] = num++;
+        i = r2;
+        c2--;
+        j--;
+      } else if (i == r2 && j == c2) {
+        while (j >= c1) res[i][j--] = num++;
+        j = c1;
+        r2--;
+        i--;
+      } else {
+        while (i >= r1) res[i--][j] = num++;
+        i = r1;
+        c1++;
+        j++;
+      }
+    }
+    return res;
+  }
+
   //https://leetcode.com/problems/binary-tree-level-order-traversal/
   vector<vector<int>> levelOrder1(TreeNode* root) {
     vector<vector<int>> res{};
@@ -2792,9 +2887,7 @@ public:
         left++;
       }
       if (data[left] > data[root]) {
-        int tmp = data[left];
-        data[left] = data[root];
-        data[root] = tmp;
+        std::swap(data[left], data[root]);
         heapBuild(data, left, len);
       }
     }
@@ -2818,7 +2911,109 @@ public:
   }
 
   int kthSmallest1(vector<vector<int>>& matrix, int k) {
+    priority_queue<int> pq{};
+    for (int i = 0; i < matrix.size(); i++) {
+      for (int j = 0; j < matrix[0].size(); j++) {
+        if (pq.size() < k) {
+          pq.emplace(matrix[i][j]);
+        } else {
+          if (matrix[i][j] >= pq.top()) {
+            break;
+          }
+          pq.emplace(matrix[i][j]);
+          pq.pop();
+        }
+      }
+    }
+    return pq.top();
   }
+
+  int kthSmallest2(vector<vector<int>>& matrix, int k) {
+    unsigned int n = matrix.size();
+    int l = matrix[0][0], r = matrix[n-1][n-1], count, mid;
+    while (l < r) {
+      mid = (l + r) >> 1;
+      count = 0;
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n && matrix[i][j] <= mid; j++) {
+          count++;
+        }
+      }
+
+      if (count < k) {
+        l = mid + 1;
+      } else {
+        r = mid;
+      }
+    }
+    return l;
+  }
+
+  //https://leetcode.com/problems/kth-smallest-element-in-a-sorted-matrix/
+  vector<vector<int>> kSmallestPairs(vector<int>& nums1, vector<int>& nums2, int k) {
+    vector<vector<int>> res{};
+    if (nums1.empty() || nums2.empty() || k <= 0) return res;
+
+    int e1 = nums1.size(), e2 = nums2.size();
+    priority_queue<pair<int, pair<int, int>>> pq{};
+    for (int i = 0; i < e1 && i < k; i++) {
+      pq.emplace(0 - nums1[i] - nums2[0], make_pair(i, 0));
+    }
+
+    while (k > 0 && !pq.empty()) {
+      auto item = pq.top(); pq.pop();
+      int idx1 = item.second.first, idx2 = item.second.second;
+      res.emplace_back(vector<int>{nums1[idx1], nums2[idx2]});
+      if (idx2 + 1 < e2) {
+        pq.emplace(0 - nums1[idx1] - nums2[idx2 + 1], make_pair(idx1, idx2 + 1));
+      }
+      k--;
+    }
+    return res;
+  }
+
+  //https://leetcode.com/problems/unique-paths/
+  int uniquePaths1(int m, int n) {
+    vector<vector<int>> dp(m, vector<int>(n, 1));
+    for (int i = 1; i < m; i++) {
+      for (int j = 1; j < n; j++) {
+        dp[i][j] = dp[i-1][j] + dp[i][j-1];
+      }
+    }
+    return dp[m-1][n-1];
+  }
+
+  int uniquePaths(int m, int n) {
+    vector<int> dp(n, 1);
+    for (int i = 1; i < m; i++) {
+      for (int j = 1; j < n; j++) {
+        dp[j] += dp[j-1];
+      }
+    }
+    return dp[n-1];
+  }
+
+  //https://leetcode.com/problems/unique-paths-ii/
+  int uniquePathsWithObstacles(vector<vector<int>>& obstacleGrid) {
+    if (obstacleGrid.empty() || obstacleGrid[0].empty()) return 0;
+    int row = obstacleGrid.size(), col = obstacleGrid[0].size();
+    vector<int> dp(col, 0);
+    dp[0] = 1;
+
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < col; j++) {
+        if (obstacleGrid[i][j] == 1) {
+          dp[j] = 0;
+        } else if (j > 0) {
+          dp[j] += dp[j-1];
+        }
+      }
+    }
+
+    return dp[col-1];
+  }
+
+
 
 
   void test(vector<int>& vec) {
