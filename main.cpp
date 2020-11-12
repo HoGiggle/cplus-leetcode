@@ -38,6 +38,12 @@ struct TreeNode {
 //  }
 //};
 
+class ParentTreeNode {
+public:
+  int val;
+  ParentTreeNode *parent, *left, *right;
+};
+
 class Node {
 public:
     int val;
@@ -54,7 +60,6 @@ public:
         children = _children;
     }
 };
-
 
 class LRUCache {
 public:
@@ -226,6 +231,7 @@ public:
   const vector<NestedInteger> &getList() const;
 };
 
+//https://leetcode.com/problems/flatten-nested-list-iterator/
 class NestedIterator {
 public:
   NestedIterator(const vector<NestedInteger> &nestedList) {
@@ -255,6 +261,33 @@ private:
   }
 
   stack<NestedInteger> st;
+};
+
+//https://leetcode.com/problems/shuffle-an-array/
+class Shuffle {
+public:
+  Shuffle(vector<int> &nums) {
+    this->data = nums;
+  }
+
+  /** Resets the array to its original configuration and return it. */
+  vector<int> reset() {
+    return this->data;
+  }
+
+  /** Returns a random shuffling of the array. */
+  vector<int> shuffle() {
+    vector<int> res(this->data);
+    for (int i = 0; i < res.size(); i++) {
+      int j = this->e() % res.size();
+      swap(res[i], res[j]);
+    }
+    return res;
+  }
+
+private:
+  vector<int> data;
+  default_random_engine e;
 };
 
 class Solution {
@@ -342,6 +375,7 @@ public:
     return res[target];
   }
 
+  //https://leetcode.com/problems/number-of-islands/
   int numIslands(vector<vector<char>>& grid) {
     if (grid.empty()) return 0;
 
@@ -363,6 +397,161 @@ public:
     numIslandsHelper(grid, i+1, j, row, col);
     numIslandsHelper(grid, i, j-1, row, col);
     numIslandsHelper(grid, i, j+1, row, col);
+  }
+
+  //https://leetcode.com/problems/max-area-of-island/
+  int maxAreaOfIsland(vector<vector<int>>& grid) {
+    if (grid.empty()) return 0;
+    int res = 0, row = grid.size(), col = grid[0].size();
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < col; j++) {
+        if (grid[i][j] == 1) {
+          int area = getLandArea(grid, i, j, row, col);
+          res = std::max(res, area);
+        }
+      }
+    }
+    return res;
+  }
+  int getLandArea(vector<vector<int>>& grid, int i, int j, int row, int col) {
+    if (i < 0 || j < 0 || i >= row || j >= col || grid[i][j] == 0) return 0;
+    grid[i][j] = 0;
+    return 1 + getLandArea(grid, i, j-1, row, col) + getLandArea(grid, i-1, j, row, col) +
+    getLandArea(grid, i, j+1, row, col) + getLandArea(grid, i+1, j, row, col);
+  }
+
+  //https://leetcode.com/problems/island-perimeter/
+  int islandPerimeter(vector<vector<int>>& grid) {
+    if (grid.empty()) return 0;
+
+    int res = 0, row = grid.size(), col = grid[0].size();
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < col; j++) {
+        if (grid[i][j] == 1) {
+          res += (4 - isLand(grid, i-1, j, row, col) - isLand(grid, i, j-1, row, col)
+            - isLand(grid, i+1, j, row, col) - isLand(grid, i, j+1, row, col));
+        }
+      }
+    }
+    return res;
+  }
+
+  int isLand(vector<vector<int>>& grid, int i, int j, int row, int col) {
+    if (i < 0 || j < 0 || i >= row || j >= col) return 0;
+    return grid[i][j];
+  }
+
+  //https://leetcode.com/problems/flood-fill/
+  vector<vector<int>> floodFill(vector<vector<int>>& image, int sr, int sc, int newColor) {
+    if (image.empty() || sr >= image.size() || sc >= image[0].size() || image[sr][sc] == newColor) return image;
+    fillAround(image, sr, sc, image.size(), image[0].size(), image[sr][sc], newColor);
+    return image;
+  }
+  void fillAround(vector<vector<int>>& image, int i, int j, int row, int col, int sColor, int newColor) {
+    if (i < 0 || j < 0 || i >= row || j >= col || image[i][j] != sColor) return;
+    image[i][j] = newColor;
+    fillAround(image, i-1, j, row, col, sColor, newColor);
+    fillAround(image, i, j-1, row, col, sColor, newColor);
+    fillAround(image, i+1, j, row, col, sColor, newColor);
+    fillAround(image, i, j+1, row, col, sColor, newColor);
+  }
+
+  //https://leetcode.com/problems/coloring-a-border/
+  vector<vector<int>> colorBorder(vector<vector<int>>& grid, int r0, int c0, int color) {
+    if (grid.empty()) return grid;
+    fill(grid, r0, c0, grid.size(), grid[0].size(), grid[r0][c0]);
+    for (int i = 0; i < grid.size(); i++) {
+      for (int j = 0; j < grid[0].size(); j++) {
+        if (grid[i][j] < 0) grid[i][j] = color;
+      }
+    }
+    return grid;
+  }
+
+  void fill(vector<vector<int>>& grid, int i, int j, int row, int col, int color) {
+    if (i < 0 || j < 0 || i >= row || j >= col || grid[i][j] != color) return;
+    grid[i][j] = -color;
+    fill(grid, i, j-1, row, col, color);
+    fill(grid, i-1, j, row, col, color);
+    fill(grid, i, j+1, row, col, color);
+    fill(grid, i+1, j, row, col, color);
+    if (i > 0 && i < row-1 && j > 0 && j < col-1 &&
+      std::abs(grid[i-1][j]) == color &&
+      std::abs(grid[i][j-1]) == color &&
+      std::abs(grid[i+1][j]) == color &&
+      std::abs(grid[i][j+1]) == color) {
+      grid[i][j] = color;
+    }
+  }
+
+  //https://leetcode.com/problems/number-of-distinct-islands/
+  int numDistinctIslands(vector<vector<int>>& grid) {
+    if (grid.empty()) return 0;
+    int row = grid.size(), col = grid[0].size();
+    unordered_set<string> lands{};
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < col; j++) {
+        if (grid[i][j] == 1) {
+          vector<char> path{};
+          dfs(grid, i, j, row, col, path, '0');
+          lands.emplace(string(path.begin(), path.end()));
+        }
+      }
+    }
+    return lands.size();
+  }
+  void dfs(vector<vector<int>>& grid, int i, int j, int row, int col, vector<char>& path, char dir) {
+    if (i < 0 || i >= row || j < 0 || j >= col || grid[i][j] != 1) return;
+    grid[i][j] = 0;
+    path.emplace_back(dir);
+    dfs(grid, i, j-1, row, col, path, '1');
+    dfs(grid, i-1, j, row, col, path, '2');
+    dfs(grid, i, j+1, row, col, path, '3');
+    dfs(grid, i+1, j, row, col, path, '4');
+  }
+
+  //https://leetcode.com/problems/surrounded-regions/
+  void solve(vector<vector<char>>& board) {
+    if (board.empty() || board[0].empty()) return;
+    int row = board.size(), col = board[0].size();
+    for (int i = 0; i < col; i++) {
+      if (board[0][i] == 'O') {
+        change(board, 0, i, row, col);
+      }
+    }
+    for (int i = 0; i < row; i++) {
+      if (board[i][col-1] == 'O') {
+        change(board, i, col-1, row, col);
+      }
+    }
+    for (int i = col-1; i >= 0; i--) {
+      if (board[row-1][i] == 'O') {
+        change(board, row-1, i, row, col);
+      }
+    }
+    for (int i = row-1; i >= 0; i--) {
+      if (board[i][0] == 'O') {
+        change(board, i, 0, row, col);
+      }
+    }
+
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < col; j++) {
+        if (board[i][j] == 'O') {
+          board[i][j] = 'X';
+        } else if (board[i][j] == 'V') {
+          board[i][j] = 'O';
+        }
+      }
+    }
+  }
+  void change(vector<vector<char>>& image, int i, int j, int row, int col) {
+    if (i < 0 || j < 0 || i >= row || j >= col || image[i][j] != 'O') return;
+    image[i][j] = 'V';
+    change(image, i-1, j, row, col);
+    change(image, i, j-1, row, col);
+    change(image, i+1, j, row, col);
+    change(image, i, j+1, row, col);
   }
 
   int subarraySum(vector<int>& nums, int k) {
@@ -1064,13 +1253,12 @@ public:
 
   //https://leetcode.com/problems/linked-list-cycle/
   bool hasCycle(ListNode *head) {
-    if (head == nullptr) return false;
     ListNode *slow, *fast;
     slow = fast = head;
-    while (fast->next != nullptr && fast->next->next != nullptr) {
-      if (slow == fast) return true;
+    while (fast != nullptr && fast->next != nullptr) {
       slow = slow->next;
       fast = fast->next->next;
+      if (slow == fast) return true;
     }
     return false;
   }
@@ -2455,6 +2643,19 @@ public:
     return res;
   }
 
+  int maxArea3(vector<int>& nums) {
+    int start = 0, end = nums.size() - 1, res = 0;
+    while (start < end) {
+      res = std::max(res, std::min(nums[start], nums[end]) * (end - start));
+      if (nums[start] < nums[end]) {
+        start++;
+      } else {
+        end--;
+      }
+    }
+    return res;
+  }
+
   //https://leetcode.com/problems/k-closest-points-to-origin/
   vector<vector<int>> kClosest1(vector<vector<int>>& points, int K) {
     priority_queue<pair<int, vector<int>>> pq{};
@@ -3013,6 +3214,490 @@ public:
     return dp[col-1];
   }
 
+  //https://leetcode.com/problems/array-nesting/
+  int arrayNesting1(vector<int>& nums) {
+    unordered_set<int> s{};
+    int count, index, res = 0;
+    for (int i = 0; i < nums.size(); i++) {
+      index = i;
+      count = 0;
+      while (s.find(index) == s.end()) {
+        s.emplace(index);
+        index = nums[index];
+        count++;
+      }
+      res = std::max(res, count);
+    }
+    return res;
+  }
+
+  int arrayNesting(vector<int>& nums) {
+    int count, index, res = 0;
+    for (int i = 0; i < nums.size(); i++) {
+      index = i;
+      count = 0;
+      while (index >= 0 && nums[index] >= 0) {
+        int next = nums[index];
+        nums[index] = -1; // nums[visited] = -1
+        index = next;
+        count++;
+      }
+      res = std::max(res, count);
+    }
+    return res;
+  }
+
+  //https://leetcode.com/problems/nested-list-weight-sum/
+  //dfs
+  int depthSumHelper(const vector<NestedInteger>& n_list, int depth) {
+    int sum = 0;
+    for (auto& item : n_list) {
+      if (item.isInteger()) {
+        sum += (depth * item.getInteger());
+      } else {
+        sum += depthSumHelper(item.getList(), depth + 1);
+      }
+    }
+    return sum;
+  }
+
+  int depthSum1(vector<NestedInteger>& nestedList) {
+    return depthSumHelper(nestedList, 1);
+  }
+
+  int depthSum(vector<NestedInteger>& nestedList) {
+    stack<pair<NestedInteger, int>> st{};
+    for (auto& item : nestedList) {
+      st.emplace(item, 1);
+    }
+
+    int sum = 0;
+    while (!st.empty()) {
+      auto& item = st.top();
+      st.pop();
+      if (item.first.isInteger()) {
+        sum += (item.first.getInteger() * item.second);
+      } else {
+        for (auto& item1 : item.first.getList()) {
+          st.emplace(item1, item.second + 1);
+        }
+      }
+    }
+    return sum;
+  }
+
+  //https://leetcode.com/problems/nested-list-weight-sum-ii/
+  //bfs
+  int depthSumInverse(vector<NestedInteger>& nestedList) {
+    queue<NestedInteger> q{};
+    int res = 0, mid = 0;
+    while (!nestedList.empty()) {
+      vector<NestedInteger> next{};
+      for (auto& item : nestedList) {
+        if (item.isInteger()) {
+          mid += item.getInteger();
+        } else {
+          next.insert(next.begin(), item.getList().begin(), item.getList().end());
+        }
+      }
+      res += mid;
+      nestedList = next;
+    }
+    return res;
+  }
+
+  //https://leetcode.com/problems/shuffle-an-array/
+
+  //https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/
+  TreeNode* buildTreeHelper(vector<int>& preorder, int pre_s,
+    vector<int>& inorder, int in_s, int in_e, unordered_map<int, int>& idx_map) {
+    if (pre_s >= preorder.size() || in_s > in_e) return nullptr;
+    auto* root = new TreeNode(preorder[pre_s]);
+    int idx = idx_map[preorder[pre_s]];
+    root->left = buildTreeHelper(preorder, pre_s + 1, inorder, in_s, idx - 1, idx_map);
+    root->right = buildTreeHelper(preorder, pre_s + idx - in_s + 1, inorder, idx + 1, in_e, idx_map);
+    return root;
+  }
+
+  TreeNode* buildTree(vector<int>& preorder, vector<int>& inorder) {
+    unordered_map<int, int> m{};
+    for (int i = 0; i < inorder.size(); i++) {
+      m[inorder[i]] = i;
+    }
+    return buildTreeHelper(preorder, 0, inorder, 0, inorder.size()-1, m);
+  }
+
+  //https://leetcode.com/problems/construct-binary-tree-from-inorder-and-postorder-traversal/
+  TreeNode* postHelper(vector<int>& inorder, vector<int>& postorder,
+    int in_s, int in_e, int post_s, int post_e, unordered_map<int, int>& in_map) {
+    if (in_s > in_e || post_s > post_e) return nullptr;
+    auto* root = new TreeNode(postorder[post_e]);
+    int idx = in_map[postorder[post_e]];
+    root->left = postHelper(inorder, postorder, in_s, idx - 1, post_s, post_s + idx - in_s - 1, in_map);
+    root->right = postHelper(inorder, postorder, idx + 1, in_e, post_s + idx - in_s, post_e - 1, in_map);
+    return root;
+  }
+
+  TreeNode* buildTree1(vector<int>& inorder, vector<int>& postorder) {
+    unordered_map<int, int> m{};
+    for (int i = 0; i < inorder.size(); i++) {
+      m[inorder[i]] = i;
+    }
+
+    return postHelper(inorder, postorder, 0, inorder.size()-1, 0, postorder.size()-1, m);
+  }
+
+  //https://leetcode.com/problems/valid-sudoku/
+  bool isValidSudoku1(vector<vector<char>>& board) {
+    vector<int> prime{2,3,5,7,11,13,17,19,23};
+    int multi = 2 * 3 * 5 * 7 * 11 * 13 * 17 * 19 * 23;
+    vector<int> row(9, multi);
+    vector<int> col(9, multi);
+    vector<int> block(9, multi);
+    for (int i = 0; i < board.size(); i++) {
+      for (int j = 0; j < board[0].size(); j++) {
+        if (board[i][j] != '.') {
+          int idx = board[i][j] - '0' - 1;
+          if (row[i] % prime[idx] != 0 || col[j] % prime[idx] != 0 || block[i / 3 * 3 + j / 3] % prime[idx] != 0) {
+            return false;
+          }
+          row[i] /= prime[idx];
+          col[j] /= prime[idx];
+          block[i/3*3 + j/3] /= prime[idx];
+        }
+      }
+    }
+    return true;
+  }
+
+  bool isValidSudoku(vector<vector<char>>& board) {
+    unordered_set<std::string> set{};
+    for (int i = 0; i < board.size(); i++) {
+      for (int j = 0; j < board[0].size(); j++) {
+        if (board[i][j] != '.') {
+          string row = std::to_string(i) + "row" + board[i][j];
+          string col = std::to_string(j) + "col" + board[i][j];
+          string block = std::to_string(i / 3 * 3 + j / 3) + "block" + board[i][j];
+          if (set.find(row) != set.end() || set.find(col) != set.end() || set.find(block) != set.end()) {
+            return false;
+          }
+          set.emplace(row);
+          set.emplace(col);
+          set.emplace(block);
+        }
+      }
+    }
+  }
+
+  //https://leetcode.com/problems/sort-colors/
+  void sortColors1(vector<int>& nums) {
+    int s = 0, e = nums.size() - 1;
+    for (int i = 0; i <= e; i++) {
+      while (nums[i] == 2 && i <= e) std::swap(nums[i], nums[e--]);
+      while (nums[i] == 0 && i >= s) std::swap(nums[i], nums[s++]);
+    }
+  }
+
+  void sortColors(vector<int>& nums) {
+    vector<int> rgb(3, 0);
+    for (auto& n : nums) {
+      rgb[n] += 1;
+    }
+    rgb[1] += rgb[0];
+    rgb[2] += rgb[1];
+
+    for (int i = 0; i < nums.size(); i++) {
+      if (i < rgb[0]) {
+        nums[i] = 0;
+      } else if (i < rgb[1]) {
+        nums[i] = 1;
+      } else {
+        nums[i] = 2;
+      }
+    }
+  }
+
+  //https://leetcode.com/problems/next-permutation/submissions/
+  void nextPermutation(vector<int> &num) {
+    //1　　2　　7　　4　　3　　1
+    //1　　2　　7　　4　　3　　1
+    //1　　3　　7　　4　　2　　1
+    //1　　3　　1　　2　　4　　7
+    int n = num.size() - 1;
+    for (int i = n - 1; i >= 0; i--) {
+      if (num[i] < num[i+1]) {
+        for (int j = n; j > i; j--) {
+          if (num[j] > num[i]) {
+            std::swap(num[i], num[j]);
+            std::reverse(num.begin() + i + 1, num.end());
+            return;
+          }
+        }
+      }
+    }
+    std::reverse(num.begin(), num.end());
+  }
+
+  //https://leetcode.com/problems/find-first-and-last-position-of-element-in-sorted-array/
+  vector<int> searchRange(vector<int>& nums, int target) {
+    vector<int> res(2, -1);
+    int start = 0, end = nums.size() - 1;
+    //left index
+    while (start <= end) {
+      int mid = (start + end) >> 1;
+      if (nums[mid] < target) {
+        start = mid + 1;
+      } else {
+        end = mid - 1;
+      }
+    }
+    if (start >= nums.size() || nums[start] != target) return res;
+    res[0] = start;
+
+    //right index
+    start = 0, end = nums.size() - 1;
+    while (start <= end) {
+      int mid = (start + end) >> 1;
+      if (nums[mid] > target) {
+        end = mid - 1;
+      } else {
+        start = mid + 1;
+      }
+    }
+    res[1] = end;
+    return res;
+  }
+
+  //https://leetcode.com/problems/first-bad-version/
+  bool isBadVersion(int version);
+  int firstBadVersion(int n) {
+    int s = 1, mid, res = n;
+    while (s <= n) {
+      mid = s + (n - s) / 2;
+      if (isBadVersion(mid)) {
+        res = mid;
+        n = mid - 1;
+      } else {
+        s = mid + 1;
+      }
+    }
+    return res;
+  }
+
+  //https://leetcode.com/problems/search-insert-position/
+  int searchInsert(vector<int>& nums, int target) {
+    int s = 0, e = nums.size() - 1;
+    while (s <= e) {
+      int mid = s + (e - s) / 2;
+      if (nums[mid] < target) {
+        s = mid + 1;
+      } else {
+        e = mid - 1;
+      }
+    }
+    return s;
+  }
+
+  //https://leetcode.com/problems/guess-number-higher-or-lower/
+  int guess(int num);
+  int guessNumber(int n) {
+    int s = 1, e = n;
+    while (s <= e) {
+      int mid = s + (e - s) / 2;
+      int pick = guess(mid);
+      if (pick == 0) {
+        return mid;
+      } else if (pick == -1) {
+        e = mid - 1;
+      } else {
+        s = mid + 1;
+      }
+    }
+    return -1;
+  }
+
+  //https://leetcode.com/problems/sort-list/
+  ListNode* merge(ListNode* l, ListNode* r) {
+    auto *head = new ListNode(0);
+    ListNode* cur = head;
+    while (l != nullptr && r != nullptr) {
+      if (r->val > l->val) {
+        cur->next = l;
+        l = l->next;
+      } else {
+        cur->next = r;
+        r = r->next;
+      }
+      cur = cur->next;
+    }
+    if (l != nullptr) cur->next = l;
+    if (r != nullptr) cur->next = r;
+    return head->next;
+  }
+
+  ListNode* sortList(ListNode* head) {
+    if (head == nullptr || head->next == nullptr) return head;
+    //find mid
+    ListNode *slow = head, *fast = head, *prev = head;
+    while (fast != nullptr && fast->next != nullptr) {
+      prev = slow;
+      slow = slow->next;
+      fast = fast->next->next;
+    }
+    prev->next = nullptr;
+
+    //sort left & right
+    ListNode* l = sortList(head);
+    ListNode* r = sortList(slow);
+
+    //merge
+    return merge(l, r);
+  }
+
+  //https://leetcode.com/problems/insertion-sort-list/
+  ListNode* insertionSortList(ListNode* head) {
+    if (head == nullptr || head->next == nullptr) return head;
+
+    ListNode node(0);
+    ListNode *cur = head, *tail;
+    while (cur != nullptr) {
+      tail = &node;
+      while (tail->next != nullptr && cur->val > tail->next->val) {
+        tail = tail->next;
+      }
+      ListNode *tmp = tail->next;
+      tail->next = cur;
+      cur = cur->next;
+      tail->next->next = tmp;
+    }
+
+    return node.next;
+  }
+
+  //https://leetcode.com/problems/insert-into-a-sorted-circular-linked-list/
+  ListNode* insert(ListNode* head, int insertVal) {
+    auto* res = new ListNode(insertVal);
+    if (head == nullptr) {
+      res->next = res;
+      return res;
+    }
+
+    ListNode* cur = head;
+    while (cur->next != head) {
+      //插入中间 or 插入头尾
+      if ((cur->val <= insertVal && cur->next->val >= insertVal) ||
+      (cur->val > cur->next->val && (cur->val < insertVal || cur->next->val > insertVal))) {
+        break;
+      }
+      cur = cur->next;
+    }
+    res->next = cur->next;
+    cur->next = res;
+    return head;
+  }
+
+  //https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree/
+  TreeNode* lowestCommonAncestor1(TreeNode* root, TreeNode* p, TreeNode* q) {
+    if (root == nullptr || root == p || root == q) return root;
+    TreeNode* left = lowestCommonAncestor(root->left, p, q);
+    TreeNode* right = lowestCommonAncestor(root->right, p, q);
+    if (left && right) return root;
+    return left ? left : right;
+  }
+
+  //https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-search-tree/
+  TreeNode* lowestCommonAncestor(TreeNode* root, TreeNode* p, TreeNode* q) {
+    if (!root || root == p || root == q) return root;
+    if (root->val > p->val && root->val > q->val) {
+      return lowestCommonAncestor(root->left, q, p);
+    } else if (root->val < p->val && root->val < q->val) {
+      return lowestCommonAncestor(root->right, p, q);
+    }
+    return root;
+  }
+
+  //https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree-ii/
+  ParentTreeNode* lowestCommonAncestorII(ParentTreeNode *root, ParentTreeNode *A, ParentTreeNode *B) {
+    ParentTreeNode* cur_A = A, *cur_B = B;
+    while (cur_A != cur_B) {
+      if (cur_A != root) {
+        cur_A = cur_A->parent;
+      } else {
+        cur_A = B;
+      }
+
+      if (cur_B != root) {
+        cur_B = cur_B->parent;
+      } else {
+        cur_B = A;
+      }
+    }
+    return cur_A;
+  }
+
+  //https://leetcode.com/problems/balanced-binary-tree/
+  int depth(TreeNode* root) {
+    if(!root) return 0;
+    int left = depth(root->left);
+    if (left == -1) {
+      return -1;
+    }
+    int right = depth(root->right);
+    if (right == -1) {
+      return -1;
+    }
+
+    if (std::abs(left - right) > 1) return -1;
+    return 1 + std::max(left, right);
+  }
+  bool isBalanced(TreeNode* root) {
+    return depth(root) != -1;
+  }
+
+  //https://leetcode.com/problems/maximum-depth-of-n-ary-tree/
+  int maxDepth(Node* root) {
+    if (!root) return 0;
+    int depth = 0;
+    for (auto child : root->children) {
+      depth = max(depth, maxDepth(child));
+    }
+    return depth + 1;
+  }
+
+  //https://leetcode.com/problems/populating-next-right-pointers-in-each-node/
+//    Node* connect(Node* root) {
+//      if (root == nullptr) return root;
+//      queue<Node*> q{};
+//      q.emplace(root);
+//      while (!q.empty()) {
+//        int len = q.size();
+//        Node* pre = nullptr;
+//        while (len--) {
+//          Node* cur = q.front();
+//          q.pop();
+//          cur->next = pre;
+//          pre = cur;
+//
+//          if (cur->right != nullptr) q.emplace(cur->right);
+//          if (cur->left != nullptr) q.emplace(cur->left);
+//        }
+//      }
+//      return root;
+//    }
+
+//  Node *connect(Node *root) {
+//    Node *pre = root, *cur;
+//    while (pre && pre->left) {
+//      cur = pre; //cur用于level遍历, pre为每层最左边节点
+//      while (cur) {
+//        cur->left->next = cur->right;
+//        if (cur->next) cur->right->next = cur->next->left;
+//        cur = cur->next;
+//      }
+//      pre = pre->left;
+//    }
+//    return root;
+//  }
 
 
 
@@ -3032,21 +3717,7 @@ public:
 
 //  std::numeric_limits<int>::max();
 int main() {
-  auto s = new Solution();
-  TreeNode root(0);
-  TreeNode l1(1);
-  TreeNode r1(2);
-  TreeNode l2(3);
-  TreeNode r2(4);
-  root.left = &l1;
-  root.right = &r1;
-  l1.left = &l2;
-  l1.right = &r2;
-  vector<vector<int>> res = s->verticalOrder(&root);
-  for (auto& vec : res) {
-    for (auto& num : vec) {
-      cout << num << ",";
-    }
-    cout << endl;
-  }
+  auto* s = new Solution();
+  vector<vector<int>> grid{vector<int>{1,1,0,0,0},vector<int>{1,1,0,0,0},vector<int>{0,0,0,1,1},vector<int>{0,0,0,1,1}};
+  cout << s->numDistinctIslands(grid) << endl;
 }
